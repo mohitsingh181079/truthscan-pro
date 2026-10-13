@@ -1,54 +1,117 @@
+
 import streamlit as st
 import PyPDF2
+import random, string
+from datetime import datetime, timedelta
+import json
+import os
 
 st.set_page_config(page_title="TruthScan PRO", page_icon="🔍", layout="centered")
 
-st.title("🔍 TruthScan PRO - Bulk Fake Resume Detector")
-st.caption("India's first AI tool to detect fake resumes in bulk for HRs and Recruiters.")
+# --- DATABASE FILE ---
+CODES_FILE = "codes.json"
+if os.path.exists(CODES_FILE):
+    with open(CODES_FILE, "r") as f:
+        ALL_CODES = json.load(f)
+else:
+    ALL_CODES = {
+        "TRUTHS-PRO-UALF8T": {"limit": 100, "expiry": "2026-11-12", "plan": "PRO", "used": 0}
+    }
+
+def save_codes():
+    with open(CODES_FILE, "w") as f:
+        json.dump(ALL_CODES, f, indent=2)
+
+def generate_code(plan):
+    prefix = f"TRUTHS-{plan}-"
+    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    code = prefix + suffix
+
+    if plan == "PRO":
+        ALL_CODES[code] = {"limit": 100, "expiry": (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"), "plan": "PRO", "used": 0}
+    elif plan == "AGENCY":
+        ALL_CODES[code] = {"limit": 9999, "expiry": (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d"), "plan": "AGENCY", "used": 0}
+    else: # FREE
+        ALL_CODES[code] = {"limit": 3, "expiry": (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"), "plan": "FREE", "used": 0}
+
+    save_codes()
+    return code
+
+# --- SESSION ---
+if 'scan_count' not in st.session_state:
+    st.session_state.scan_count = 0
+
+st.title("🔍 TruthScan PRO")
 st.divider()
 
-# --- MAIN TOOL ---
-jd_text = st.text_area("📄 Paste Job Description (JD)", placeholder="Ex: Need Data Analyst with Python, SQL, Excel...", height=120)
+# --- MAIN APP ---
+jd = st.text_area("Paste Job Description")
+files = st.file_uploader("Upload Resumes", type="pdf", accept_multiple_files=True)
+license_key = st.text_input("Enter Your License Key")
 
-uploaded_files = st.file_uploader("📤 Upload 1 to 10 Resumes", type="pdf", accept_multiple_files=True)
+# Check license
+plan = "FREE"
+limit = 3
+if license_key in ALL_CODES:
+    data = ALL_CODES[license_key]
+    expiry = datetime.strptime(data["expiry"], "%Y-%m-%d")
+    if datetime.now() > expiry:
+        st.error("❌ Code Expired")
+    elif data["used"] >= data["limit"]:
+        st.error("❌ Limit Over")
+    else:
+        plan = data["plan"]
+        limit = data["limit"]
+        st.success(f"✅ {plan} Activated - {limit} scans, Expiry: {data['expiry']}")
 
 if st.button("🚀 Scan Resumes", type="primary", use_container_width=True):
-    if not jd_text:
-        st.warning("Please paste Job Description first.")
-    elif not uploaded_files:
-        st.warning("Please upload at least 1 resume.")
-    else:
-        for pdf_file in uploaded_files:
-            reader = PyPDF2.PdfReader(pdf_file)
-            text = ""
-            for page in reader.pages:
-                text += page.extract_text() or ""
-            
-            text_lower = text.lower()
-            fake_keywords = ["class notes", "chemical bonding", "ncert", "chapter", "exercise", "question bank", "syllabus"]
-            is_fake = any(k in text_lower for k in fake_keywords)
-            
-            st.divider()
-            st.write(f"**File: {pdf_file.name}**")
-            if is_fake or len(text_lower) < 200:
-                st.error("❌ Fake / Irrelevant - This is study notes, not a resume")
-            else:
-                st.success("✅ Correct / Relevant Resume")
+    if files:
+        if st.session_state.scan_count + len(files) > limit and plan == "FREE" and license_key not in ALL_CODES:
+            st.error(f"🔒 FREE limit 3 over. Buy PRO.")
+            st.stop()
 
+        for pdf in files:
+            reader = PyPDF2.PdfReader(pdf)
+            text = "".join([p.extract_text() or "" for p in reader.pages]).lower()
+            is_fake = any(x in text for x in ["class notes", "chemical bonding", "ncert", "chapter"])
+            st.write(f"**{pdf.name}**")
+            st.error("❌ Fake / Irrelevant") if is_fake else st.success("✅ Correct Resume")
+
+        if license_key in ALL_CODES:
+            ALL_CODES[license_key]["used"] += len(files)
+            save_codes()
+
+# --- PRICING ---
 st.divider()
-
-# --- PRICING SECTION - YE RAHEGA ---
 st.subheader("💰 Pricing Plans")
-st.markdown("**🆓 FREE - ₹0**")
-st.write("• 3 scans / month")
-st.markdown("**🔥 PRO - ₹499 / month**")
-st.write("• 100 scans / month + Verified Report")
-st.markdown("**🚀 AGENCY - ₹3999 / month**")
-st.write("• Unlimited Scans")
+c1, c2, c3 = st.columns(3)
+c1.markdown("**FREE - ₹0**\n3 scans / month")
+c2.markdown("**PRO - ₹499**\n100 scans / month")
+c3.markdown("**AGENCY - ₹3999**\nUnlimited Scans")
 
-st.subheader("📞 Get PRO Access")
-st.markdown("Contact Founder on LinkedIn: https://www.linkedin.com/in/mohit-humbe/")
+st.markdown("Contact Founder on LinkedIn: https://www.linkedin.com/in/mohit-singh-6a9815415")
 st.write("DM for PRO Access")
-
-st.divider()
 st.caption("Built with ❤️ in India | TruthScan PRO v1.0")
+
+# --- ADMIN PANEL (YE TERA WALA HAI) ---
+st.divider()
+st.subheader("Admin Panel - Code Generator")
+
+admin_pass = st.text_input("Admin Password", type="password")
+if admin_pass == "mohit123": # tu password change kar sakta hai
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("Generate PRO (100/30 Days)"):
+            code = generate_code("PRO")
+            st.success(code)
+    with col2:
+        if st.button("Generate AGENCY (Unlimited)"):
+            code = generate_code("AGENCY")
+            st.success(code)
+    with col3:
+        if st.button("Generate FREE (3/30 Days)"):
+            code = generate_code("FREE")
+            st.success(code)
+
+    st.subheader("All Generated Codes")
+    st.json(ALL_CODES)
