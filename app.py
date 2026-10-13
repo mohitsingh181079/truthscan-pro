@@ -133,6 +133,10 @@ st.markdown("LinkedIn: https://www.linkedin.com/in/mohit-singh-6a9815415")
 # --- ADMIN PANEL ---
 query_params = st.query_params
 if query_params.get("admin") == "true":
+        pwd = st.text_input("Admin Password", type="password")
+    if pwd != "mohit@123":
+        st.warning("mmoo1100@")
+        st.stop()
     st.divider()
     st.subheader("Admin Panel - Code Generator")
 
