@@ -134,7 +134,7 @@ st.markdown("LinkedIn: https://www.linkedin.com/in/mohit-singh-6a9815415")
 query_params = st.query_params
 if query_params.get("admin") == "true":
         pwd = st.text_input("Admin Password", type="password")
-    if pwd != "mohit@123":
+    if pwd != "mmoo1122@":
         st.warning("mmoo1100@")
         st.stop()
     st.divider()
