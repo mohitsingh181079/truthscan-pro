@@ -40,7 +40,7 @@ def generate_code(plan):
         expiry = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
         ALL_CODES[code] = {"limit": 100, "expiry": expiry, "plan": "PRO", "used": 0}
     elif plan == "AGENCY":
-        expiry = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
+        expiry = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
         ALL_CODES[code] = {"limit": 9999, "expiry": expiry, "plan": "AGENCY", "used": 0}
     else:
         expiry = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
@@ -125,8 +125,8 @@ with col2:
 
 with col3:
     st.markdown("**AGENCY - ₹3999**")
-    st.write("Unlimited scans / year")
-    st.write("365 Days Validity")
+    st.write("Unlimited scans / month")
+    st.write("30 Days Validity")
 
 st.markdown("LinkedIn: https://www.linkedin.com/in/mohit-singh-6a9815415")
 
