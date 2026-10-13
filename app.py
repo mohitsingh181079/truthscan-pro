@@ -134,7 +134,8 @@ st.markdown("LinkedIn: https://www.linkedin.com/in/mohit-singh-6a9815415")
 if st.query_params.get("admin") == "true":
     pwd = st.text_input("Admin Password", type="password")
     if pwd != "mmoo1122@":
-        st.warning("Sahi password dalo")
+        if pwd != "":  # khali hone pe warning nahi dikhayega
+            st.warning("Wrong password! Access denied.")
         st.stop()
     st.divider()
     st.subheader("Admin Panel - Code Generator")
