@@ -131,7 +131,7 @@ with col3:
 st.markdown("LinkedIn: https://www.linkedin.com/in/mohit-singh-6a9815415")
 
 # --- ADMIN PANEL ---
-if query_params.get("admin") == "true":
+if st.query_params.get("admin") == "true":
     pwd = st.text_input("Admin Password", type="password")
     if pwd != "mmoo1122@":
         st.warning("Sahi password dalo")
